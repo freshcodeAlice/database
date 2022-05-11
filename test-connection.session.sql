@@ -2,17 +2,17 @@ DROP TABLE users;
 
 CREATE TABLE users(
     id serial PRIMARY KEY,
-    first_name varchar(64) NOT NULL CHECK (first_name != ''),
+    first_name varchar(64) NOT NULL CONSTRAINT "FN_CH_NOT_EMPTY" CHECK (first_name != ''),
     last_name varchar(64) NOT NULL CHECK (last_name != ''),
     email varchar(256) NOT NULL UNIQUE CHECK (email != ''),
     gender varchar(64) NOT NULL,
-    isSubscribe boolean NOT NULL,
+    is_subscribe boolean NOT NULL,
     birthday date NOT NULL CHECK (birthday < current_date),
     height numeric(3,2) NOT NULL CHECK (height > 0.20 AND height < 3.0)
 );
 
-INSERT INTO users 
-VALUES ('Test', 'hello', 'test@test.com', 'male', true, '1999-05-10', 1.90),
+INSERT INTO users (first_name, last_name, email, gender, is_subscribe, birthday, height)
+VALUES ('', 'hello', 'test@test.com', 'male', true, '1999-05-10', 1.90),
 ('world', 'Testovich', 'tes1t@test.com', 'female', true, '1999-05-10', 1.50),
 ('Test', 'Testovich', 'hw@com', 'binary', false, '1999-05-10', 1.90),
 ('Test', 'Testovich', 'test2@test.com', 'other', false, '1999-05-10', 1.80),
@@ -24,7 +24,7 @@ VALUES ('Test', 'hello', 'test@test.com', 'male', true, '1999-05-10', 1.90),
 DROP TABLE messages;
 
 CREATE TABLE messages(
-id serial PRIMARY KEY,
+id serial CONSTAINT "PK_ID" PRIMARY KEY,
 body varchar(5000) NOT NULL,
 author varchar(64) NOT NULL,
 create_at timestamp DEFAULT current_timestamp,
@@ -39,3 +39,18 @@ INSERT INTO messages (author, body)
 ('Test Testovich', 'message'),
 ('Test Testovich', 'message');
 
+
+-----
+
+DROP TABLE A;
+
+CREATE TABLE A(
+    b int,
+    c int,
+ PRIMARY KEY (b,c)
+);
+
+INSERT INTO A VALUES
+(1, 1),
+(1, 2),
+(1, 1);
