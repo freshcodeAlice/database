@@ -114,3 +114,36 @@ CREATE TABLE messages(
     chat_id int,
     FOREIGN KEY (chat_id, author_id) REFERENCES user_to_chat (chat_id, user_id)
 );
+
+/*
+
+
+Сущность Контент
+- имя
+- описание
+- дата создания
+
+Сущность реакции
+- like
+- dislike
+- null или можем удалить кортеж из таблицы
+
+Контент --->Реакции <----Пользователь
+
+*/
+
+DROP TABLE content;
+
+CREATE TABLE content(
+    id serial PRIMARY KEY,
+    name varchar(64),
+    description text,
+    author_id int REFERENCES users(id)
+);
+
+
+CREATE TABLE reactions(
+users_id int REFERENCES users(id),
+content_id int REFERENCES content(id),
+is_liked boolean
+);
