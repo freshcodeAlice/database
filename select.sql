@@ -173,3 +173,135 @@ WHERE extract('month' from "birthday") = 9;
 SELECT * FROM "users"
 WHERE age("birthday") > make_interval(20)
 AND age("birthday") < make_interval(40);
+
+
+------
+
+SELECT * FROM "users"
+WHERE extract('month' from "birthday") = 11 AND extract('day' from "birthday") = 10;
+
+--Alias---
+
+SELECT "id" AS "Порядковый номер", 
+"first_name" AS "Имя", 
+"last_name" AS "Фамилия", 
+"email" AS "Почта"
+FROM "users";
+
+
+SELECT * FROM "users" AS "u"
+WHERE "u"."id" = 99;
+
+
+--Pagination---
+
+
+SELECT * FROM "users"
+LIMIT 15;
+
+SELECT * FROM "users"
+LIMIT 15
+OFFSET 15;
+/* OFFSET - отступ
+*/
+
+
+SELECT * FROM "users"
+LIMIT 15
+OFFSET 30;
+
+/* OFFSET = LIMIT*page
+*/
+
+
+-----
+
+SELECT "id", 
+"first_name" || "last_name" AS "Full name"
+FROM "users";
+
+
+SELECT "id", 
+"first_name" || ' ' || "last_name" AS "Full name"
+FROM "users";
+
+SELECT "id", 
+concat("first_name", ' ', "last_name") AS "Full name"
+FROM "users";
+
+
+/*
+
+Получить всех юзеров, у которых длина полного имени больше 15 символов
+
+*/
+
+SELECT "id", 
+concat("first_name", ' ', "last_name") AS "Full name"
+FROM "users"
+WHERE char_length(concat("first_name", ' ', "last_name")) > 15;
+
+
+SELECT * FROM
+    (SELECT "id", 
+    concat("first_name", ' ', "last_name") AS "Full name"
+    FROM "users") AS "FN"
+WHERE char_length("FN"."Full name") > 15;
+
+------
+
+
+SELECT * FROM "users"
+WHERE extract('year' from age("birthday")) = 27;
+
+
+----Агрегатные функции------
+
+/*
+avg - среднее арифметическое
+sum - сумма всех значений
+min - минимальное из значений
+max - максимальное из значений
+count - количество значений
+
+
+*/
+
+
+SELECT max("height") FROM "users";
+
+SELECT min("height") FROM "users";
+
+SELECT count(*) FROM "users";
+
+SELECT avg("weight") FROM "users";
+
+-----
+
+SELECT avg("weight"), "gender"
+FROM "users"
+GROUP BY "gender";
+
+SELECT max("weight"), "gender"
+FROM "users"
+WHERE extract('year' from age("birthday")) > 18
+GROUP BY "gender";
+
+
+SELECT count(*), "gender"
+FROM "users"
+WHERE extract('year' from age("birthday")) > 18
+GROUP BY "gender";
+
+/*
+Практика:
+
+1. Средний рост всех пользователей
+2. Средний рост всех мужчин и женщин отдельно
+3. Минимальный и максимальный рост мужчин и женщин
+4. Количество юзеров, родившихся после 1998г.
+5. Количество людей по определенному имени.
+6. Количество людей в возрасте от 20 до 30 лет.
+
+
+*/
