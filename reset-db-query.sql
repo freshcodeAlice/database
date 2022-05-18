@@ -3,6 +3,7 @@
 DROP TABLE IF EXISTS "orders_to_phones"; 
 DROP TABLE IF EXISTS "phones"; 
 DROP TABLE IF EXISTS "orders"; 
+DROP TABLE IF EXISTS users;
 
 /* Создаем их все заново, определяем столбцы */
 /* Структура такая:
@@ -12,6 +13,21 @@ DROP TABLE IF EXISTS "orders";
 (связь m:n)
 
 */
+
+
+CREATE TABLE users(
+    id serial PRIMARY KEY,
+    first_name varchar(64) NOT NULL CHECK (first_name != ''),
+    last_name varchar(64) NOT NULL CHECK (last_name != ''),
+    email varchar(256) NOT NULL UNIQUE CHECK (email != ''),
+    gender varchar(64) NOT NULL,
+    is_subscribe boolean NOT NULL,
+    birthday date NOT NULL CHECK (birthday < current_date AND birthday > '1900/1/1'),
+    height numeric(3,2) NOT NULL CHECK (height > 0.20 AND height < 3.0)
+);
+
+
+
 
 
 CREATE TABLE "phones"(

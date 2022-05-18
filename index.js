@@ -15,8 +15,8 @@ async function start () {
   );
   await client.query(resetDBQuery);
 
-  // const users = await User.bulkCreate(await loadUsers());
-  const { rows: users } = await User.findAll();
+  const users = await User.bulkCreate(await loadUsers());
+  //  const { rows: users } = await User.findAll();
   const phones = await Phone.bulkCreate(generatePhones());
   const orders = await Order.bulkCreate(users, phones);
 
