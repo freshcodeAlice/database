@@ -479,3 +479,24 @@ WHERE first_name ~* '.*i{2}.*'; --регистрозависимый запро�
 SELECT * FROM "messages"
 WHERE body ILIKE '%паровоз%';
 
+
+/*
+
+1. Выбрать 1 пользователя с самым длинным полным именем (full name)
+*/
+
+SELECT char_length(concat("first_name", ' ', "last_name")) AS "name length", * 
+FROM users
+ORDER BY "name length" DESC
+LIMIT 1;
+
+
+/*
+2. Посчитать количество юзеров с одинаковой длиной полного имени, и отсеять те группы, где количество символов < 15
+*/
+
+SELECT char_length(concat("first_name", ' ', "last_name")) AS "name length", count(*)
+FROM users
+GROUP BY "name length"
+HAVING char_length(concat("first_name", ' ', "last_name")) > 15
+ORDER BY "name length";
