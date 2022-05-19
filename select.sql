@@ -500,3 +500,274 @@ FROM users
 GROUP BY "name length"
 HAVING char_length(concat("first_name", ' ', "last_name")) > 15
 ORDER BY "name length";
+
+
+/*
+-------------
+
+*/
+DROP TABLE A;
+DROP TABLE B;
+
+CREATE TABLE A (
+    v char(3),
+    t int
+);
+
+CREATE TABLE B(
+    v char(3)
+);
+
+INSERT INTO A VALUES 
+('XXX', 1),('XXY', 1),('XXZ', 1),
+('XYX', 2),('XYY', 2),('XYZ', 2),
+('YXX', 3),('YXY', 3),('YXZ', 3),
+('YZX', 3),('ZXY', 3),('ZZZ', 3);
+
+INSERT INTO B VALUES 
+('YXX'),('YXY'),('YXZ'),
+('YZX'),('ZXY'),('AAA');
+
+SELECT * FROM A;
+
+SELECT * FROM B;
+
+SELECT * FROM A,B; --декартово произведение
+
+/* Объединение - 1 таблица + 2, повторяющиеся значения исключаются */
+SELECT v FROM A
+UNION
+SELECT * FROM B;
+
+
+/* Пересечение - только те значения, которые есть и в 1 таблице и во 2 */
+SELECT v FROM A
+INTERSECT
+SELECT * FROM B;
+
+
+/* Вычитание - только те значения А, которых нет в В */
+SELECT v FROM A
+EXCEPT
+SELECT * FROM B;
+
+SELECT * FROM B
+EXCEPT
+SELECT v FROM A;
+
+
+--------
+
+INSERT INTO users (
+    first_name,
+    last_name,
+    email,
+    gender,
+    is_subscribe,
+    birthday,
+    height,
+    weight
+  )
+VALUES (
+    'Spiderman',
+    'Guy',
+    'email@.test',
+    'male',
+    TRUE,
+    '2020/05/19',
+    1.8,
+    65
+  ),
+  (
+    'Iron',
+    'Man',
+    'tony@.test',
+    'male',
+    TRUE,
+    '2019/05/19',
+    1.9,
+    65
+  )
+  ;
+
+  -----------
+
+/* все юзеры, которые когда-либо делали заказы */
+
+  SELECT "id" FROM "users"
+  INTERSECT
+  SELECT "user_id" FROM "orders";
+
+  /* все юзеры, которые никогда заказов не делали*/
+  
+SELECT "id" FROM "users"
+  EXCEPT
+  SELECT "user_id" FROM "orders";
+
+ 
+  -----
+
+/* Соединение, но плохой код*/
+
+  SELECT * FROM A,B
+  WHERE A.v = B.v;
+
+  SELECT A.v AS "model",
+  A.t AS "id",
+  B.v AS "brand"
+  FROM A, B
+  WHERE A.v = B.v;
+
+  /* JOIN */
+
+  SELECT * 
+  FROM A JOIN B
+  ON A.v = B.v;
+
+  /* Предикат, чаще всего: PK => <= FK */
+
+   /* Я хочу получить все заказы определенного юзера, вместе с инфой об этом юзере */
+
+  SELECT * FROM users
+  WHERE id = 2;
+
+  SELECT * FROM orders
+  WHERE user_id = 2;
+
+SELECT * 
+FROM users JOIN orders
+ON orders.user_id = users.id
+WHERE users.id = 2;
+
+SELECT u.*, o.id AS "order number" 
+FROM
+users AS u 
+JOIN orders AS o
+ON o.user_id = u.id
+WHERE u.id = 2;
+
+-------------
+
+
+SELECT * 
+FROM A 
+JOIN B ON A.v = B.v 
+JOIN phones ON A.t = phones.id;
+
+
+/* 
+Найти id всех заказов, в которых есть телефон бренда Samsung
+
+*/
+
+SELECT o.id AS "Order number", p.model 
+FROM orders AS o
+JOIN orders_to_phones AS otp
+ON o.id =otp.order_id
+JOIN phones AS p
+ON p.id = otp.phone_id
+WHERE p.brand ILIKE 'samsung';
+
+
+
+/* Посчитать, сколько моделей самсунга в каждом заказе
+*/
+
+SELECT o.id AS "Order number", count(p.model) 
+FROM orders AS o
+JOIN orders_to_phones AS otp
+ON o.id =otp.order_id
+JOIN phones AS p
+ON p.id = otp.phone_id
+WHERE p.brand ILIKE 'samsung'
+GROUP BY o.id;
+
+------------
+
+INSERT INTO phones (brand, model, quantity, price)
+VALUES (
+    'FRESHPHONE',
+    'X',
+    3,
+    30000
+  );
+
+  SELECT phone_id, p.model, sum(otp.quantity) AS "summary"
+  FROM orders_to_phones AS otp
+  JOIN phones AS p
+  ON p.id = otp.phone_id
+  GROUP BY phone_id, p.model
+  ORDER BY phone_id;
+
+  /*найти телефоны, которые никто никогда не покупал
+  */
+
+    SELECT phone_id, p.model, sum(otp.quantity) AS "summary"
+  FROM orders_to_phones AS otp
+  RIGHT JOIN phones
+  ON phones.id = otp.phone_id
+  GROUP BY phone_id, p.model
+  ORDER BY phone_id;
+
+------
+
+/*
+Найти email всех пользователей, которые делали заказы
+
+*/
+
+SELECT DISTINCT users.email FROM users
+JOIN orders 
+ON users.id = orders.user_id;
+
+
+SELECT users.email FROM users
+JOIN orders 
+ON users.id = orders.user_id
+GROUP BY users.email;
+
+/*  
+Мейлы пользователей, котоыре покупали samsung
+*/
+
+SELECT u.email
+FROM users AS u
+JOIN orders AS o
+ON u.id = o.user_id
+JOIN orders_to_phones AS otp 
+ON o.id = otp.order_id
+JOIN phones AS p
+ON otp.phone_id = p.id
+WHERE p.brand ILIKE 'samsung'
+GROUP BY u.email;
+
+
+/*
+Найти пользователей и их количество заказов
+
+*/
+
+SELECT count(o.id) AS "Order quantity", u.* 
+FROM users AS u
+LEFT JOIN orders AS o
+ON o.user_id = u.id
+GROUP BY o.user_id, u.id
+ORDER BY "Order quantity";
+
+
+
+/*
+
+1. Найти стоимость каждого заказа
+2. Найти количество заказов конкретного пользователя, вывести его email
+
+
+*/
+
+SELECT sum(otp.quantity*p.price), o.id
+FROM orders AS o
+JOIN orders_to_phones AS otp
+ON o.id = otp.order_id
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY o.id;
