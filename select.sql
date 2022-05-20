@@ -702,12 +702,17 @@ VALUES (
   /*найти телефоны, которые никто никогда не покупал
   */
 
-    SELECT phone_id, p.model, sum(otp.quantity) AS "summary"
+    SELECT phone_id, p.model
   FROM orders_to_phones AS otp
-  RIGHT JOIN phones
-  ON phones.id = otp.phone_id
-  GROUP BY phone_id, p.model
-  ORDER BY phone_id;
+  RIGHT JOIN phones AS p
+  ON p.id = otp.phone_id
+  GROUP BY otp.phone_id, p.model
+;
+
+SELECT *
+ FROM phones
+ WHERE id NOT IN (SELECT phone_id 
+ FROM orders_to_phones AS otp);
 
 ------
 
@@ -771,3 +776,209 @@ ON o.id = otp.order_id
 JOIN phones AS p
 ON otp.phone_id = p.id
 GROUP BY o.id;
+
+
+/*
+A + B
+
+INNER JOIN - JOIN - общее в таблицах, которое удовлетворяет условие
+
+LEFT [OUTER] JOIN - INNER JOIN + всё уникальное из А
+RIGHT [OUTER] JOIN - INNER JOIN + всё уникальное из В
+
+FULL OUTER - INNER + всё уникальное из А и В
+
+*/
+
+
+-----------
+
+
+
+/*
+Достать все заказы, в которых есть определенная модель определенного бренда
+
+*/
+
+SELECT otp.order_id AS "Order Number", p.brand, p.model
+FROM orders_to_phones AS otp
+JOIN phones AS p
+ON otp.phone_id = p.id
+WHERE p.brand ILIKE 'iphone' AND p.model ILIKE '5%'
+;
+
+/* Посчитать, сколько заказов этой модели */
+
+SELECT count(*), p.brand, p.model
+FROM orders_to_phones AS otp
+JOIN phones AS p
+ON otp.phone_id = p.id
+WHERE p.brand ILIKE 'iphone' AND p.model ILIKE '5%'
+GROUP BY p.model, p.brand
+;
+
+
+/*
+1. Извлечь все купленные телефоны (бренд + модель) конкретного заказа
+*/
+
+SELECT p.brand, p.model
+FROM orders_to_phones AS otp
+JOIN phones as p
+ON otp.phone_id = p.id
+WHERE otp.order_id = 35;
+
+SELECT * FROM orders_to_phones
+WHERE order_id = 35;
+
+/*
+2. Количество позиций в определенном заказе
+*/
+
+SELECT count(*)
+FROM orders_to_phones AS otp
+JOIN phones as p
+ON otp.phone_id = p.id
+WHERE otp.order_id = 35
+GROUP BY otp.order_id;
+
+
+/*
+3. Найти самый популярный телефон.
+*/
+
+SELECT sum(otp.quantity) as "amount", p.brand, p.model
+FROM orders_to_phones AS otp
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY p.id
+ORDER BY "amount" DESC
+LIMIT 1;
+
+/*
+4. Вытащить всех пользователей и количество купленных ими моделей телефонов
+*/
+
+SELECT u.id AS "uid", 
+p.id AS "pid"
+FROM users AS u
+JOIN orders AS o
+ON u.id = o.user_id
+JOIN orders_to_phones AS otp
+ON o.id = otp.order_id
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY u.id, p.id;
+
+SELECT count("pid"), "uid"
+FROM (
+  SELECT u.id AS "uid", 
+p.id AS "pid"
+FROM users AS u
+JOIN orders AS o
+ON u.id = o.user_id
+JOIN orders_to_phones AS otp
+ON o.id = otp.order_id
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY u.id, p.id
+) AS "uid_w_pid"
+GROUP BY "uid";
+
+/* отсюда теперь можно вытащить инфу о юзерах */
+WITH "users_with_count" AS (
+    SELECT u.id AS "uid", 
+    p.id AS "pid"
+    FROM users AS u
+    JOIN orders AS o
+    ON u.id = o.user_id
+    JOIN orders_to_phones AS otp
+    ON o.id = otp.order_id
+    JOIN phones AS p
+    ON otp.phone_id = p.id
+    GROUP BY u.id, p.id
+)
+SELECT count(*), "uid" 
+FROM "users_with_count"
+GROUP BY "uid";
+
+/*
+5. Средний чек по всем заказам.
+*/
+
+SELECT avg("summary")
+FROM
+  (SELECT sum(otp.quantity * p.price) AS "summary"
+FROM orders_to_phones AS otp 
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY otp.order_id) AS "sum of orders"
+;
+
+
+
+/*
+6. Извлечь все заказы, стоимостью выше среднего чека в магазине.
+*/
+
+--1) Считаем стоимость каждого заказа
+SELECT otp.order_id, sum(otp.quantity * p.price) AS "cost"
+FROM orders_to_phones AS otp 
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY otp.order_id;
+
+--2) Получаем средний чек
+SELECT avg("cost")
+FROM (
+  SELECT otp.order_id, sum(otp.quantity * p.price) AS "cost"
+FROM orders_to_phones AS otp 
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY otp.order_id
+) AS "owc";
+
+--3) Получаем все заказы, выше этого среднего чека
+SELECT "owc".*
+FROM (SELECT otp.order_id, sum(otp.quantity * p.price) AS "cost"
+FROM orders_to_phones AS otp 
+JOIN phones AS p
+ON otp.phone_id = p.id
+GROUP BY otp.order_id) AS "owc"
+WHERE "owc"."cost" > ( -- скалярный подзапрос
+      SELECT avg("cost")
+    FROM (
+      SELECT otp.order_id, sum(otp.quantity * p.price) AS "cost"
+    FROM orders_to_phones AS otp 
+    JOIN phones AS p
+    ON otp.phone_id = p.id
+    GROUP BY otp.order_id
+    ) AS "owc" 
+);
+
+-- 4) Рефактор
+/* WITH псевдоним_таблицы AS (табличное выражение)
+SELECT....;
+*/
+
+WITH "orders_with_costs" AS (
+    SELECT otp.order_id, sum(otp.quantity * p.price) AS "cost"
+    FROM orders_to_phones AS otp 
+    JOIN phones AS p
+    ON otp.phone_id = p.id
+    GROUP BY otp.order_id
+    )
+SELECT "owc".*
+FROM "orders_with_costs" AS "owc"
+WHERE "owc"."cost" > (
+  SELECT avg("owc"."cost")
+  FROM "orders_with_costs" AS "owc"
+);
+
+
+/*
+7. Извлечь всех пользователей, у которых количество заказов выше среднего
+-- 1) количество заказов по каждому пользователю
+-- 2) найти среднее количество заказов
+-- 3) найти пользователей, у которых количество больше среднего
+*/
