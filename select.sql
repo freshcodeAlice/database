@@ -885,10 +885,9 @@ GROUP BY u.id, p.id
 ) AS "uid_w_pid"
 GROUP BY "uid";
 
-/* отсюда теперь можно вытащить инфу о юзерах */
-WITH "users_with_count" AS (
-    SELECT u.id AS "uid", 
-    p.id AS "pid"
+/* теперь есть айди, мейлы юзеров и количество заказанных ими моделей телефонов */
+WITH users_with_count AS (
+    SELECT u.*
     FROM users AS u
     JOIN orders AS o
     ON u.id = o.user_id
@@ -896,11 +895,10 @@ WITH "users_with_count" AS (
     ON o.id = otp.order_id
     JOIN phones AS p
     ON otp.phone_id = p.id
-    GROUP BY u.id, p.id
 )
-SELECT count(*), "uid" 
-FROM "users_with_count"
-GROUP BY "uid";
+SELECT count(*), uwc.id, uwc.email 
+FROM users_with_count AS uwc
+GROUP BY uwc.id, uwc.email;
 
 /*
 5. Средний чек по всем заказам.
