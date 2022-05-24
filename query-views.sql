@@ -283,3 +283,88 @@ WHERE p.id != ALL (
     SELECT "phone_id" 
     FROM orders_to_phones
     );
+
+
+
+
+/* VIEWS - виртуальные таблицы */
+
+SELECT * FROM users;
+
+SELECT u.*, count(o.id) AS "order_amount"
+FROM users AS u 
+JOIN orders AS o 
+ON u.id = o.user_id
+GROUP BY u.id, u.email;
+
+CREATE OR REPLACE VIEW "users_with_order_amounts" AS (
+    SELECT u.*, count(o.id) AS "order_amount"
+    FROM users AS u 
+    LEFT JOIN orders AS o 
+    ON u.id = o.user_id
+    GROUP BY u.id, u.email
+);
+
+SELECT * FROM "users_with_order_amounts";
+
+/*
+WITH vs VIEWS
+
+WITH возвращает табличное выражение
+в рамках 1 запроса
+
+WITH ... AS ()
+SELECT ...;
+
+*/
+
+SELECT * FROM "users_with_order_amounts";
+
+--- Заказы с их стоимостью
+
+SELECT o.*, sum(p.price*otp.quantity) 
+FROM orders AS o
+JOIN orders_to_phones AS otp
+ON o.id = otp.order_id
+JOIN phones AS p
+ON p.id = otp.phone_id
+GROUP BY o.id;
+
+------
+
+DROP VIEW "orders_with_price";
+
+CREATE VIEW "orders_with_price" AS (
+    SELECT o.user_id, o.id, sum(p.price*otp.quantity) 
+FROM orders AS o
+JOIN orders_to_phones AS otp
+ON o.id = otp.order_id
+JOIN phones AS p
+ON p.id = otp.phone_id
+GROUP BY o.id
+);
+
+SELECT u.id, u.email, u.birthday  
+FROM "orders_with_price" AS owp
+JOIN users AS u
+ON u.id = owp.user_id;
+
+CREATE VIEW "spam_list" AS (
+    SELECT u.id, u.email, u.birthday  
+FROM "orders_with_price" AS owp
+JOIN users AS u
+ON u.id = owp.user_id
+);
+
+
+/*
+
+Task:
+
+1. Сделайте вью с полным именем, возрастом и гендером пользователей
+2. Топ-10 самых дорогих покупок
+3. Топ-10 юзеров с самым большим количеством заказов
+
+
+
+*/
