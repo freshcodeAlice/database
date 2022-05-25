@@ -230,3 +230,96 @@ VALUES (
   SELECT * 
   FROM nt.users AS u
   WHERE u.id NOT IN (SELECT user_id FROM nt.employees);
+
+
+
+  /* Window FUNCTIONS */
+
+  CREATE SCHEMA wf;
+
+  CREATE TABLE wf.departments (
+      id serial PRIMARY KEY,
+      name varchar(64) NOT NULL
+  );
+
+  INSERT INTO wf.departments (name) VALUES ('HR'), ('Sales'), ('Delepment'), ('Driver');
+
+  CREATE TABLE wf.employees(
+      id serial PRIMARY KEY,
+      department_id int REFERENCES wf.departments,
+      name varchar(64) NOT NULL,
+      salary numeric(10,2) NOT NULL CHECK (salary >= 0)
+  );
+
+  INSERT INTO wf.employees (department_id,
+  name,
+  salary) VALUES 
+  (1, 'John', 5000), 
+  (1, 'Jane', 7000), 
+  (2, 'JAke', 10000), 
+  (2, 'Klay', 8000), 
+  (2, 'Nike', 5000), 
+  (3, 'Riki', 9000),
+    (3, 'Morty', 11000),
+    (3, 'Rich', 3000);
+
+    /* Посчитать количество сотрудников в отделах */
+
+SELECT d.name, count(e.id) AS "employee count"
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id
+GROUP BY d.id;
+
+/* Сотрудник и название его отдела */
+
+SELECT e.*, d.name
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id;
+
+
+/* Среднюю зарплату по каждому отделу */
+
+
+SELECT avg(e.salary), d.name
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id
+GROUP BY d.id;
+
+/* Вся инфа о сотрудниках, департаментах и средняя зп всего департамента */
+
+SELECT e.*, d.*, "avg salary"
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id
+JOIN (
+    SELECT avg(e.salary) AS "avg salary", d.name, d.id
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id
+GROUP BY d.id
+) AS "das"
+ON das.id = d.id;
+
+
+SELECT e.*, d.*, 
+avg(e.salary) OVER (PARTITION BY d.id) AS "avg salary"
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id;
+
+
+
+SELECT e.*, d.*, 
+avg(e.salary) OVER () AS "summary salary",
+avg(e.salary) OVER (PARTITION BY d.id) AS "avg salary"
+FROM wf.departments AS d
+JOIN wf.employees AS e
+ON e.department_id = d.id;
+
+/* 
+Вывести всех сотрудников, с название отдела, суммарной зарплатой всего отдела и суммарной зарплатой всей компании
+
+*/
